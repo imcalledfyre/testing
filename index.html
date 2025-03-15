@@ -15,41 +15,77 @@
 		<script type="text/javascript" src="bootstrap.js"></script>
 		<script type="text/javascript">
 			"use strict";
+
+			// Function to get a cookie value by name
+			function getCookie(name) {
+				var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+				return match ? match[2] : null;
+			}
+
+			// Function to set a cookie
+			function setCookie(name, value, days) {
+				var date = new Date();
+				date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+				document.cookie = name + "=" + value + "; expires=" + date.toUTCString() + "; path=/";
+			}
+
+			// Display the ban screen
+			function displayBanScreen() {
+				document.body.innerHTML = '<div style="color: white; text-align: center; margin-top: 50px;">You have been banned for connecting to unauthorized servers. Please try again later.</div>';
+			}
+
+			// Check if the user is banned or has connected to an unauthorized server
 			window.addEventListener("load", function() {
-				if(window.location.href.indexOf("file:") === 0) {
-					alert("HTTP please, do not open this file locally, run a local HTTP server and load it via HTTP");
-				}else {
-					
-					// %%%%%%%%% launch options %%%%%%%%%%%%
-					
-					var relayId = Math.floor(Math.random() * 3);
-					window.eaglercraftXOpts = {
-						demoMode: false,
-						container: "game_frame",
-						assetsURI: "assets.epw",
-						worldsDB: "worlds",
-						servers: [
-							/* example: { addr: "ws://localhost:8081/", name: "Local test server" } */
-						],
-						relays: [
-							{ addr: "wss://relay.deev.is/", comment: "lax1dude relay #1", primary: relayId == 0 },
-							{ addr: "wss://relay.lax1dude.net/", comment: "lax1dude relay #2", primary: relayId == 1 },
-							{ addr: "wss://relay.shhnowisnottheti.me/", comment: "ayunami relay #1", primary: relayId == 2 }
-						]
-					};
-					
-					// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-					
-					var q = window.location.search;
-					if((typeof q === "string") && q[0] === "?" && (typeof window.URLSearchParams !== "undefined")) {
-						q = new window.URLSearchParams(q);
-						var s = q.get("server");
-						if(s) window.eaglercraftXOpts.joinServer = s;
-					}
-					
-					main();
-					
+				// Check if the user is banned
+				var banCookie = getCookie("ban_status");
+				if (banCookie === "banned") {
+					// Display ban screen
+					displayBanScreen();
+					return;
 				}
+
+				// Check if the user is trying to connect to an invalid server
+				var q = window.location.search;
+				if ((typeof q === "string") && q[0] === "?" && (typeof window.URLSearchParams !== "undefined")) {
+					q = new window.URLSearchParams(q);
+					var s = q.get("server");
+					if (s && !s.includes("imcalledfyre.com")) {
+						// Set the ban cookie for 1 day
+						setCookie("ban_status", "banned", 1);
+						// Reload the page
+						location.reload();
+						return;
+					}
+				}
+
+				// If not banned and connected to a valid server, proceed with game setup
+				// %%%%%%%%% launch options %%%%%%%%%%%%
+				var relayId = Math.floor(Math.random() * 3);
+				window.eaglercraftXOpts = {
+					demoMode: false,
+					container: "game_frame",
+					assetsURI: "assets.epw",
+					worldsDB: "worlds",
+					servers: [
+						{ addr: "wss://eagler.imcalledfyre.com/", name: "Fyrecraft" } */
+					],
+					relays: [
+						{ addr: "wss://relay.deev.is/", comment: "lax1dude relay #1", primary: relayId == 0 },
+						{ addr: "wss://relay.lax1dude.net/", comment: "lax1dude relay #2", primary: relayId == 1 },
+						{ addr: "wss://relay.shhnowisnottheti.me/", comment: "ayunami relay #1", primary: relayId == 2 }
+					]
+				};
+
+				// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+				var q = window.location.search;
+				if ((typeof q === "string") && q[0] === "?" && (typeof window.URLSearchParams !== "undefined")) {
+					q = new window.URLSearchParams(q);
+					var s = q.get("server");
+					if (s) window.eaglercraftXOpts.joinServer = s;
+				}
+
+				main();
 			});
 		</script>
 	</head>
