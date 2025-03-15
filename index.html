@@ -16,76 +16,72 @@
 		<script type="text/javascript">
 			"use strict";
 
-			// Function to get a cookie value by name
-			function getCookie(name) {
-				var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-				return match ? match[2] : null;
+			// Function to display a warning about external server connections
+			function showWarning() {
+				alert("Warning: External server connections will be terminated. Only connections to servers under '*.imcalledfyre.com' are allowed.");
 			}
 
-			// Function to set a cookie
-			function setCookie(name, value, days) {
-				var date = new Date();
-				date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-				document.cookie = name + "=" + value + "; expires=" + date.toUTCString() + "; path=/";
+			// Function to check and block invalid WebSocket connections
+			function checkServerConnection(serverUrl) {
+				// Only allow connections to *.imcalledfyre.com
+				var validPattern = /^wss:\/\/([a-zA-Z0-9-]+\.)?imcalledfyre\.com$/;
+				if (!validPattern.test(serverUrl)) {
+					// Display a warning and stop connection to external servers
+					showWarning();
+					return null;
+				}
+				return serverUrl;
 			}
 
-			// Display the ban screen
-			function displayBanScreen() {
-				document.body.innerHTML = '<div style="color: white; text-align: center; margin-top: 50px;">You have been banned for connecting to unauthorized servers. Please try again later.</div>';
-			}
-
-			// Check if the user is banned or has connected to an unauthorized server
+			// Execute once the page is loaded
 			window.addEventListener("load", function() {
-				// Check if the user is banned
-				var banCookie = getCookie("ban_status");
-				if (banCookie === "banned") {
-					// Display ban screen
-					displayBanScreen();
-					return;
-				}
-
-				// Check if the user is trying to connect to an invalid server
+				// Check if there is a "server" parameter in the URL
 				var q = window.location.search;
 				if ((typeof q === "string") && q[0] === "?" && (typeof window.URLSearchParams !== "undefined")) {
 					q = new window.URLSearchParams(q);
 					var s = q.get("server");
-					if (s && !s.includes("imcalledfyre.com")) {
-						// Set the ban cookie for 1 day
-						setCookie("ban_status", "banned", 1);
-						// Reload the page
-						location.reload();
-						return;
+					if (s) {
+						// Validate the server URL before proceeding
+						var validServer = checkServerConnection(s);
+						if (validServer) {
+							// Proceed with valid server connection setup
+							window.eaglercraftXOpts = {
+								demoMode: false,
+								container: "game_frame",
+								assetsURI: "assets.epw",
+								worldsDB: "worlds",
+								servers: [
+									/* example: { addr: "ws://localhost:8081/", name: "Local test server" } */
+								],
+								relays: [
+									{ addr: "wss://relay.deev.is/", comment: "lax1dude relay #1", primary: relayId == 0 },
+									{ addr: "wss://relay.lax1dude.net/", comment: "lax1dude relay #2", primary: relayId == 1 },
+									{ addr: "wss://relay.shhnowisnottheti.me/", comment: "ayunami relay #1", primary: relayId == 2 }
+								]
+							};
+							window.eaglercraftXOpts.joinServer = validServer;
+							main();
+						}
 					}
+				} else {
+					// If no server is passed, proceed with the default behavior
+					var relayId = Math.floor(Math.random() * 3);
+					window.eaglercraftXOpts = {
+						demoMode: false,
+						container: "game_frame",
+						assetsURI: "assets.epw",
+						worldsDB: "worlds",
+						servers: [
+							/* example: { addr: "ws://localhost:8081/", name: "Local test server" } */
+						],
+						relays: [
+							{ addr: "wss://relay.deev.is/", comment: "lax1dude relay #1", primary: relayId == 0 },
+							{ addr: "wss://relay.lax1dude.net/", comment: "lax1dude relay #2", primary: relayId == 1 },
+							{ addr: "wss://relay.shhnowisnottheti.me/", comment: "ayunami relay #1", primary: relayId == 2 }
+						]
+					};
+					main();
 				}
-
-				// If not banned and connected to a valid server, proceed with game setup
-				// %%%%%%%%% launch options %%%%%%%%%%%%
-				var relayId = Math.floor(Math.random() * 3);
-				window.eaglercraftXOpts = {
-					demoMode: false,
-					container: "game_frame",
-					assetsURI: "assets.epw",
-					worldsDB: "worlds",
-					servers: [
-						{ addr: "wss://eagler.imcalledfyre.com/", name: "Fyrecraft" } */
-					],
-					relays: [
-						{ addr: "wss://relay.deev.is/", comment: "lax1dude relay #1", primary: relayId == 0 },
-						{ addr: "wss://relay.lax1dude.net/", comment: "lax1dude relay #2", primary: relayId == 1 },
-						{ addr: "wss://relay.shhnowisnottheti.me/", comment: "ayunami relay #1", primary: relayId == 2 }
-					]
-				};
-
-				// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-				var q = window.location.search;
-				if ((typeof q === "string") && q[0] === "?" && (typeof window.URLSearchParams !== "undefined")) {
-					q = new window.URLSearchParams(q);
-					var s = q.get("server");
-					if (s) window.eaglercraftXOpts.joinServer = s;
-				}
-
-				main();
 			});
 		</script>
 	</head>
